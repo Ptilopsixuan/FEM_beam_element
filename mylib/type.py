@@ -251,6 +251,7 @@ class InputData:
                         self.units[index].Ke[1][1] = self.units[index].Ke[4][4] = replace_k
                         self.units[index].Ke[4][1] = self.units[index].Ke[1][4] = -replace_k
                         self.units[index].Ke[1][5] = self.units[index].Ke[5][1] = replace_k * unit.L
+                        self.units[index].Ke[4][5] = self.units[index].Ke[5][4] = -replace_k * unit.L
                         self.units[index].Ke[5][5] = replace_k * unit.L**2
                         self.units[index].Ke[1][2] = self.units[index].Ke[2][4] = self.units[index].Ke[2][5] = self.units[index].Ke[2][2] = \
                         self.units[index].Ke[5][2] = self.units[index].Ke[4][2] = self.units[index].Ke[2][1] = 0
@@ -258,6 +259,7 @@ class InputData:
                         self.units[index].Ke[1][1] = self.units[index].Ke[4][4] = replace_k
                         self.units[index].Ke[4][1] = self.units[index].Ke[1][4] = -replace_k
                         self.units[index].Ke[1][2] = self.units[index].Ke[2][1] = replace_k * unit.L
+                        self.units[index].Ke[2][4] = self.units[index].Ke[4][2] = -replace_k * unit.L
                         self.units[index].Ke[2][2] = replace_k * unit.L**2
                         self.units[index].Ke[1][5] = self.units[index].Ke[2][5] = self.units[index].Ke[4][5] = self.units[index].Ke[5][5] = \
                         self.units[index].Ke[5][4] = self.units[index].Ke[5][2] = self.units[index].Ke[5][1] = 0
