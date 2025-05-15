@@ -9,10 +9,14 @@ class Point: # 节点
     # load
     px = 0
     py = 0
-    # axial displacement
+    pm = 0
+    # displacement
     ax = 0
-    # deflection
     ay = 0
+    # axial displacement
+    u = 0
+    # deflection
+    w = 0
     # rotation
     theta = 0
 
@@ -95,7 +99,8 @@ class Unit: # 单元
     # shear stiffness
     GA = 0
     # Correction factor for shear distribution
-    k = 0
+    k:float = 0
+    b:float = 0
     # endregion
 
     def __init__(self, data:list[float], shear: bool = False) -> None:
@@ -155,16 +160,16 @@ class Unit: # 单元
     
     def calculateKe_with_shear(self) -> np.ndarray:
         # with shear deformation
-        k = [10/9 if self.plane.shape == 0 else 6/5] # P312
-        b = 12 * self.EI * k / self.GA / self.L**2
-        k0 = self.EI / (1 + b) / self.L**3
+        self.k = [10/9 if self.plane.shape == 0 else 6/5] # P312
+        self.b = 12 * self.EI * self.k / self.GA / self.L**2
+        k0 = self.EI / (1 + self.b) / self.L**3
         k1 = self.EA / self.L / k0
         Ke = np.array([ [k1, 0, 0, -k1, 0, 0],
                         [0, 12, 6 * self.L, 0, -12, 6 * self.L],
-                        [0, 6 * self.L, (4 + b) * self.L**2, 0, -6 * self.L, (2 - b) * self.L**2],
+                        [0, 6 * self.L, (4 + self.b) * self.L**2, 0, -6 * self.L, (2 - self.b) * self.L**2],
                         [-k1, 0, 0, k1, 0, 0],
                         [0, -12, -6 * self.L, 0, 12, -6 * self.L],
-                        [0, 6 * self.L, (2 - b) * self.L**2, 0, -6 * self.L, (4 + b) * self.L**2]])
+                        [0, 6 * self.L, (2 - self.b) * self.L**2, 0, -6 * self.L, (4 + self.b) * self.L**2]])
         Ke = k0 * Ke
         return Ke
 
@@ -246,21 +251,21 @@ class InputData:
             if hitch.unit.id == unit.id:
                 index = self.units.index(unit)
                 if len(hitch.points) == 1:
-                    replace_k = 3 * unit.EI / unit.L**3
+                    # replace_k = 3 * unit.EI / unit.L**3
                     if hitch.points[0].id == hitch.unit.i.id:
-                        self.units[index].Ke[1][1] = self.units[index].Ke[4][4] = replace_k
-                        self.units[index].Ke[4][1] = self.units[index].Ke[1][4] = -replace_k
-                        self.units[index].Ke[1][5] = self.units[index].Ke[5][1] = replace_k * unit.L
-                        self.units[index].Ke[4][5] = self.units[index].Ke[5][4] = -replace_k * unit.L
-                        self.units[index].Ke[5][5] = replace_k * unit.L**2
+                        self.units[index].Ke[1][1] = self.units[index].Ke[4][4] = self.units[index].Ke[1][1] / 4
+                        self.units[index].Ke[4][1] = self.units[index].Ke[1][4] = self.units[index].Ke[4][1] / 4
+                        self.units[index].Ke[1][5] = self.units[index].Ke[5][1] = self.units[index].Ke[1][5] / 2
+                        self.units[index].Ke[4][5] = self.units[index].Ke[5][4] = self.units[index].Ke[4][5] / 2
+                        self.units[index].Ke[5][5] = (self.units[index].Ke[5][5] - self.units[index].b) * 3 / 4 + self.units[index].b
                         self.units[index].Ke[1][2] = self.units[index].Ke[2][4] = self.units[index].Ke[2][5] = self.units[index].Ke[2][2] = \
                         self.units[index].Ke[5][2] = self.units[index].Ke[4][2] = self.units[index].Ke[2][1] = 0
                     elif hitch.points[0].id == hitch.unit.j.id:
-                        self.units[index].Ke[1][1] = self.units[index].Ke[4][4] = replace_k
-                        self.units[index].Ke[4][1] = self.units[index].Ke[1][4] = -replace_k
-                        self.units[index].Ke[1][2] = self.units[index].Ke[2][1] = replace_k * unit.L
-                        self.units[index].Ke[2][4] = self.units[index].Ke[4][2] = -replace_k * unit.L
-                        self.units[index].Ke[2][2] = replace_k * unit.L**2
+                        self.units[index].Ke[1][1] = self.units[index].Ke[4][4] = self.units[index].Ke[1][1] / 4
+                        self.units[index].Ke[4][1] = self.units[index].Ke[1][4] = self.units[index].Ke[4][1] / 4
+                        self.units[index].Ke[1][2] = self.units[index].Ke[2][1] = self.units[index].Ke[1][2] / 2
+                        self.units[index].Ke[2][4] = self.units[index].Ke[4][2] = self.units[index].Ke[2][4] / 2
+                        self.units[index].Ke[2][2] = (self.units[index].Ke[2][2] - self.units[index].b) * 3 / 4 + self.units[index].b
                         self.units[index].Ke[1][5] = self.units[index].Ke[2][5] = self.units[index].Ke[4][5] = self.units[index].Ke[5][5] = \
                         self.units[index].Ke[5][4] = self.units[index].Ke[5][2] = self.units[index].Ke[5][1] = 0
                 elif len(hitch.points) == 2:
@@ -325,8 +330,12 @@ class InputData:
     
     def calculatePe(self):
         self.Pe = np.matmul(self.Kg, self.Result)
-
+        for i, p in enumerate(self.points):
+            p.px = self.Pe[i*3]
+            p.py = self.Pe[i*3+1]
+            p.pm = self.Pe[i*3+2]
         return self.Pe
+
     
 
 
