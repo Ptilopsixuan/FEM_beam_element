@@ -10,9 +10,9 @@ class Point: # 节点
     px = 0
     py = 0
     # axial displacement
-    u = 0
+    ax = 0
     # deflection
-    w = 0
+    ay = 0
     # rotation
     theta = 0
 
@@ -237,7 +237,7 @@ class InputData:
     def addConstraint(self) -> list[int]:
         ConstraintLine = []
         for constraint in self.constraints:
-            ConstraintLine.append((constraint.point.id-1)*3+constraint.axis-1)
+            ConstraintLine.append(int((constraint.point.id-1)*3+constraint.axis-1))
 
         return ConstraintLine
 
@@ -288,35 +288,53 @@ class InputData:
         # apply constraints
         cl = self.addConstraint()
         mask = [i for i in range(n * 3) if i not in cl]
-        
-        self.Kg = self.Kg[np.ix_(mask, mask)]
+        self.Kg_calc = self.Kg[np.ix_(mask, mask)]
 
     def integratePe(self):
         n = len(self.points)
         self.Pe = np.zeros((n*3, 1))
+        self.Result = np.zeros(n*3).tolist()
         for p in self.payloads:
             id = p.point.id
             self.Pe[id*3-3][0] += p.px
             self.Pe[id*3-2][0] += p.py
             self.Pe[id*3-1][0] += p.pm
-
         # apply constraints
         cl = self.addConstraint()
+        for i in cl:
+            self.Result[i] = "con"
         mask = [i for i in range(n * 3) if i not in cl]
-        self.Pe = self.Pe[np.ix_(mask)].T[0]
-    
-    def calculateA(self) -> np.ndarray:
-        inv = np.linalg.inv(self.Kg)
-        P = self.Pe.T
-        tmp = np.matmul(inv, P).T
-        result = [np.round(x, 12) for x in tmp]
+        self.Pe_calc = self.Pe[np.ix_(mask)].T[0]
 
-        return result
+        return self.Pe_calc
+    
+    def calculateA(self) -> list[float]:
+        inv = np.linalg.inv(self.Kg_calc)
+        P = self.Pe_calc.T
+        tmp = np.matmul(inv, P).T
+        self.A = [np.round(x, 12) for x in tmp]
+        for a in self.A:
+            self.Result[self.Result.index(0)] = a
+        self.Result = [0 if r == "con" else r for r in self.Result]
+        for i, p in enumerate(self.points):
+            p.ax = self.Result[i*3]
+            p.ay = self.Result[i*3+1]
+            p.theta = self.Result[i*3+2] 
+
+        return self.Result
+    
+    def calculatePe(self):
+        self.Pe = np.matmul(self.Kg, self.Result)
+
+        return self.Pe
+    
 
 
 class OutputData:
     points = []
+    units = []
 
     def __init__(self, points:list[Point], units:list[Unit]) -> None:
         self.points = points
         self.units = units
+    

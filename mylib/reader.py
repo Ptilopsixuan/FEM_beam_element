@@ -1,13 +1,12 @@
-from . import type#, draw
+from . import type, drawer
 import re
 
 
 def readLine(line: str) -> str:
     tmp = line.split('#')
-    return re.sub('[\s,，；;]+', ' ', tmp[0]).strip()
+    return re.sub('[\\s,，；;]+', ' ', tmp[0]).strip()
 
-
-def readFile(filePath: str) -> type.InputData:
+def readFile(filePath: str, shear: bool = False) -> type.InputData:
     fileData = []
     pic_path = filePath.replace(".txt", ".png")
     try:
@@ -22,10 +21,9 @@ def readFile(filePath: str) -> type.InputData:
                 fileData.append(tmp)
     except Exception as e:
         print(e, '\n文件读取失败，请检查文件路径')
-    return parseData(fileData, pic_path)
+    return parseData(fileData, pic_path, shear)
 
-
-def parseData(src: list[list[float]], pic_path: str) -> type.InputData:
+def parseData(src: list[list[float]], pic_path: str, shear: bool = False) -> type.InputData:
     data = type.InputData()
     try:
         # 节点数目和节点坐标：编号  x坐标  y坐标
@@ -51,7 +49,7 @@ def parseData(src: list[list[float]], pic_path: str) -> type.InputData:
             tmp[2] = getItemById(data.points, tmp[2])
             tmp[3] = getItemById(data.materials, tmp[3])
             tmp[4] = getItemById(data.planes, tmp[4])
-            data.units.append(type.Unit(tmp))
+            data.units.append(type.Unit(tmp, shear))
             count -= 1
         # 荷载信息 ：节点号，x方向力，y方向力
         count = src.pop(0)[0]
@@ -89,11 +87,8 @@ def parseData(src: list[list[float]], pic_path: str) -> type.InputData:
     except Exception as e:
         Exception(e, '\n输入的文件格式不正确，数据文件出错')
 
-    #draw.d(data, pic_path)
-
-
+    drawer.d(data, pic_path)
     return data
-
 
 def getItemById(list, id):
     for i in list:
@@ -102,5 +97,5 @@ def getItemById(list, id):
     Exception(f"{list}中没有指定的资源编号：{id}，数据文件出错")
 
 if __name__ == "__main__":
-    data = readFile("..\input\1.txt")
+    data = readFile("..\\input\\1.txt")
     print(data)
