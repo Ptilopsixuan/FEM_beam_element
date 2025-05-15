@@ -6,9 +6,11 @@ model.integrateKe()
 model.integratePe()
 data = model.calculateA()
 model.calculatePe()
+model.transback()
 
-result = [float(r) for r in data]
-print(result)
-print(model.Pe)
-output = type.OutputData(model.points, model.units)
+output = type.OutputData(model.points, model.units, model.Pe)
 writer.writeFile(f"output\\{model_name}.txt", output)
+
+# result = [float(r) for r in data]
+# print(result)
+# print(model.Pe)

@@ -101,6 +101,13 @@ class Unit: # 单元
     # Correction factor for shear distribution
     k:float = 0
     b:float = 0
+    # internal force
+    i_N = 0
+    i_V = 0
+    i_M = 0
+    j_N = 0
+    j_V = 0
+    j_M = 0
     # endregion
 
     def __init__(self, data:list[float], shear: bool = False) -> None:
@@ -330,20 +337,32 @@ class InputData:
     
     def calculatePe(self):
         self.Pe = np.matmul(self.Kg, self.Result)
+        self.Pe = [round(float(x), 3) for x in self.Pe]
         for i, p in enumerate(self.points):
             p.px = self.Pe[i*3]
             p.py = self.Pe[i*3+1]
             p.pm = self.Pe[i*3+2]
         return self.Pe
-
     
+    def transback(self):
+        for i, unit in enumerate(self.units):
+            T = unit.T
+            a = [unit.i.ax, unit.i.ay, unit.i.theta, unit.j.ax, unit.j.ay, unit.j.theta]
+            P = np.matmul(unit.Ke, np.matmul(T, a))
+            unit.i_N = P[0]
+            unit.i_V = P[1]
+            unit.i_M = P[2]
+            unit.j_N = P[3]
+            unit.j_V = P[4]
+            unit.j_M = P[5]
 
 
 class OutputData:
-    points = []
-    units = []
+    points:list[Point] = []
+    units:list[Unit] = []
+    Pe:list[float] = []
 
-    def __init__(self, points:list[Point], units:list[Unit]) -> None:
+    def __init__(self, points:list[Point], units:list[Unit], Pe:list[float]) -> None:
         self.points = points
         self.units = units
-    
+        self.Pe = Pe
